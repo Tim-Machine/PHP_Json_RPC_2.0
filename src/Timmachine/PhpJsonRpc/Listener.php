@@ -22,6 +22,8 @@ class Listener
 
     private $router;
 
+    private $methodFactory;
+
     function __construct(Router $router)
     {
         $this->router = $router;
@@ -162,16 +164,23 @@ class Listener
             $this->setId($request->id);
         }
 
-        return $this->isValidJson();
+        return $this;
     }
 
     public function processRequest()
     {
-        print('Route:: '.$this->getMethod());
+        if ($this->router->exist($this->getMethod())) {
+            try {
+                $this->methodFactory = new MethodFactory($this->router->getMethod());
+            } catch (RpcExceptions $e) {
+                throw $e;
+            }
+        } else {
+            $this->setError(['message' => 'INVALID REQUEST :: missing method', 'code' => -32600]);
+            throw new RpcExceptions("Method {$this->getMethod()} does not exist");
+        }
 
-        $exist = $this->router->exist($this->getMethod());
-        var_dump($exist);
-
+        $this->methodFactory->getMethodArgs();
     }
 
 } 

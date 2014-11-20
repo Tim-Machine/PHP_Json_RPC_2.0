@@ -27,6 +27,18 @@ class MethodFactory
     public $validMethod = true;
 
     /**
+     * @var null
+     */
+    public $callable = true;
+
+    /**
+     * @var null
+     */
+    public $constructorArguments = null;
+
+    public $methodArguments = null;
+
+    /**
      * @param $method
      *
      * @throws RpcExceptions
@@ -101,6 +113,56 @@ class MethodFactory
         $this->validMethod = $validMethod;
     }
 
+    /**
+     * @return null
+     */
+    public function isCallable()
+    {
+        return $this->callable;
+    }
+
+    /**
+     * @param null $callable
+     */
+    public function setCallable($callable)
+    {
+        $this->callable = $callable;
+    }
+
+    /**
+     * @return null
+     */
+    public function getConstructorArguments()
+    {
+        return $this->constructorArguments;
+    }
+
+    /**
+     * @param null $constructorArguments
+     */
+    public function setConstructorArguments($constructorArguments)
+    {
+        $this->constructorArguments = $constructorArguments;
+    }
+
+    /**
+     * @return null
+     */
+    public function getMethodArguments()
+    {
+        return $this->methodArguments;
+    }
+
+    /**
+     * @param null $methodArguments
+     */
+    public function setMethodArguments($methodArguments)
+    {
+        $this->methodArguments = $methodArguments;
+    }
+
+
+
 
     /**
      * @throws RpcExceptions
@@ -117,5 +179,56 @@ class MethodFactory
         }
     }
 
+
+    /**
+     * @return $this
+     * @throws RpcExceptions
+     */
+    private function checkMethodExist()
+    {
+
+        $class = $this->getClass();
+
+        if (class_exists($class)) {
+            $this->getClassConstructor($class);
+            $class = new $class;
+            $this->setCallable(method_exists($class, $this->getFunction()));
+
+        } else {
+            $this->setCallable(false);
+            throw new RpcExceptions('Class does not exist or is unreachable');
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param $class
+     *
+     * @return bool|\ReflectionParameter[]
+     */
+    private function getClassConstructor($class)
+    {
+        $refl = new \ReflectionClass($class);
+
+        if ($con = $refl->getConstructor()) {
+            $this->setConstructorArguments($con->getParameters());
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+    public function getMethodArgs()
+    {
+        if($this->checkMethodExist()->isCallable())
+        {
+            $relf = new \ReflectionMethod($this->getClass(),$this->getFunction());
+            $this->setMethodArguments($relf->getParameters());
+            return $this->getMethodArguments();
+        }
+
+    }
 
 } 

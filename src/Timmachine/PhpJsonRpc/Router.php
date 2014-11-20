@@ -15,6 +15,7 @@ class Router
      */
     private $routes = [];
 
+    public $method;
 
     /**
      *  adds a route to the routes array
@@ -29,6 +30,24 @@ class Router
         $route         = new RouteFactory($name,$method,$before,$after);
         array_push($this->routes, $route);
     }
+
+    /**
+     * @return mixed
+     */
+    public function getMethod()
+    {
+        return $this->method;
+    }
+
+    /**
+     * @param mixed $method
+     */
+    public function setMethod($method)
+    {
+        $this->method = $method;
+    }
+
+
 
     /**
      * checks to see if a route exist
@@ -47,9 +66,11 @@ class Router
             }
             if($this->routes[$i]->name === $name){
                 $exist = true;
+                $this->setMethod($this->routes[$i]->method);
             }
         }
 
         return $exist;
     }
+
 } 
