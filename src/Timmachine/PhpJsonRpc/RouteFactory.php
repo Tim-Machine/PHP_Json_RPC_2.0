@@ -9,15 +9,38 @@
 namespace Timmachine\PhpJsonRpc;
 
 
-class RouteFactory {
+/**
+ * Class RouteFactory
+ * @package Timmachine\PhpJsonRpc
+ */
+class RouteFactory
+{
 
+    /**
+     * @var
+     */
     public $name;
+    /**
+     * @var
+     */
     public $method;
+    /**
+     * @var
+     */
     public $before;
+    /**
+     * @var
+     */
     public $after;
 
 
-    function __construct( $name, $method, $before ,$after)
+    /**
+     * @param $name
+     * @param $method
+     * @param $before
+     * @param $after
+     */
+    function __construct($name, $method, $before, $after)
     {
         $this->setName($name);
         $this->setMethod($method);
@@ -90,5 +113,4 @@ class RouteFactory {
     }
 
 
-
-} 
+}

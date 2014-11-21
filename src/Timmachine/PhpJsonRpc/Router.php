@@ -17,6 +17,9 @@ class Router
 
     public $method;
 
+    public $before;
+    public $after;
+
     /**
      *  adds a route to the routes array
      *
@@ -25,9 +28,9 @@ class Router
      * @param null $before
      * @param null $after
      */
-    public function add($name, $method, $before = null, $after = null)
+    public function add($name, $method, array $before = null, array $after = null)
     {
-        $route         = new RouteFactory($name,$method,$before,$after);
+        $route = new RouteFactory($name, $method, $before, $after);
         array_push($this->routes, $route);
     }
 
@@ -47,6 +50,37 @@ class Router
         $this->method = $method;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getAfter()
+    {
+        return $this->after;
+    }
+
+    /**
+     * @param mixed $after
+     */
+    public function setAfter($after)
+    {
+        $this->after = $after;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBefore()
+    {
+        return $this->before;
+    }
+
+    /**
+     * @param mixed $before
+     */
+    public function setBefore($before)
+    {
+        $this->before = $before;
+    }
 
 
     /**
@@ -64,13 +98,16 @@ class Router
             if ($exist) {
                 return $exist;
             }
-            if($this->routes[$i]->name === $name){
+            if ($this->routes[$i]->name === $name) {
                 $exist = true;
                 $this->setMethod($this->routes[$i]->method);
+                $this->setBefore($this->routes[$i]->before);
+                $this->setAfter($this->routes[$i]->after);
             }
         }
 
         return $exist;
     }
+
 
 } 

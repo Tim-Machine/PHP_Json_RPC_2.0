@@ -24,19 +24,19 @@ class MethodFactory
     /**
      * @var bool
      */
-    public $validMethod = true;
+    private $validMethod = true;
 
     /**
      * @var null
      */
-    public $callable = true;
+    private $callable = true;
 
     /**
      * @var null
      */
-    public $constructorArguments = null;
+    private $constructorArguments = null;
 
-    public $methodArguments = null;
+    private $methodArguments = null;
 
     /**
      * @param $method
@@ -162,8 +162,6 @@ class MethodFactory
     }
 
 
-
-
     /**
      * @throws RpcExceptions
      */
@@ -196,7 +194,7 @@ class MethodFactory
 
         } else {
             $this->setCallable(false);
-            throw new RpcExceptions('Class does not exist or is unreachable');
+            throw new RpcExceptions("Class [{$class}] does not exist or is unreachable" , -32601);
         }
 
         return $this;
@@ -213,6 +211,7 @@ class MethodFactory
 
         if ($con = $refl->getConstructor()) {
             $this->setConstructorArguments($con->getParameters());
+
             return true;
         } else {
             return false;
@@ -222,13 +221,31 @@ class MethodFactory
 
     public function getMethodArgs()
     {
-        if($this->checkMethodExist()->isCallable())
-        {
-            $relf = new \ReflectionMethod($this->getClass(),$this->getFunction());
+        if ($this->checkMethodExist()->isCallable()) {
+            $relf = new \ReflectionMethod($this->getClass(), $this->getFunction());
             $this->setMethodArguments($relf->getParameters());
+
             return $this->getMethodArguments();
         }
 
+    }
+
+    public function executeMethod(array $params)
+    {
+
+        if (count($this->getConstructorArguments()) > 0) {
+            throw new RpcExceptions('Can not call a class that requires parameters for the constructor');
+        }
+
+        try {
+            $className = $this->getClass();
+            $method = new \ReflectionMethod($className,$this->getFunction());
+            $results = $method->invokeArgs(new $className,$params);
+
+            return $results;
+        } catch (\Exception $e) {
+            throw new RpcExceptions($e->getMessage(),-32600);
+        }
     }
 
 } 
