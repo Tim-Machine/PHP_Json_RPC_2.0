@@ -8,28 +8,93 @@ use Timmachine\PhpJsonRpc\Router;
 class Listener
 {
 
+    /**
+     * @var bool
+     */
     private $ValidJson = true;
 
+    /**
+     * @var
+     */
+    private $jsonObject;
+
+    /**
+     * @var string
+     */
     private $method = '';
 
+    /**
+     * @var array
+     */
     private $params = [];
 
+    /**
+     * @var int
+     */
     private $id = 0;
 
+    /**
+     * @var
+     */
     private $result;
 
+    /**
+     * @var bool
+     */
     private $error = false;
 
+    /**
+     * @var string
+     */
     private $errorMessage = '';
 
+    /**
+     * @var
+     */
     private $router;
 
+    /**
+     * @var
+     */
     private $methodFactory;
 
-    function __construct(Router $router)
+    /**
+     * @var
+     */
+    private $version ;
+
+    /**
+     * @var
+     */
+    private $requirements;
+
+    /**
+     * @param Router $router
+     * @param string $version
+     * @param array  $requirements
+     */
+    function __construct(Router $router, $version = '2.0', array $requirements = array())
     {
-        $this->router = $router;
+        $this->setRouter($router);
     }
+
+    /**
+     * @return mixed
+     */
+    public function getJsonObject()
+    {
+        return $this->jsonObject;
+    }
+
+    /**
+     * @param mixed $jsonObject
+     */
+    public function setJsonObject($jsonObject)
+    {
+        $this->jsonObject = $jsonObject;
+    }
+
+
 
     /**
      * @return boolean
@@ -136,8 +201,10 @@ class Listener
         return $this->errorMessage;
     }
 
+
     /**
-     * @param string $errorMessage
+     * @param $message
+     * @param $code
      */
     public function setErrorMessage($message, $code)
     {
@@ -145,17 +212,93 @@ class Listener
         $this->errorMessage = ['messge' => $message, 'code' => $code];
     }
 
+    /**
+     * @return mixed
+     */
+    public function getRequirements()
+    {
+        return $this->requirements;
+    }
+
+    /**
+     * @param mixed $requirements
+     */
+    public function setRequirements($requirements)
+    {
+        $this->requirements = $requirements;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getVersion()
+    {
+        return $this->version;
+    }
+
+    /**
+     * @param mixed $version
+     */
+    public function setVersion($version)
+    {
+        $this->version = $version;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMethodFactory()
+    {
+        return $this->methodFactory;
+    }
+
+    /**
+     * @param mixed $methodFactory
+     */
+    public function setMethodFactory(MethodFactory $methodFactory)
+    {
+        $this->methodFactory = $methodFactory;
+    }
+
+    /**
+     * @return Router
+     */
+    public function getRouter()
+    {
+        return $this->router;
+    }
+
+    /**
+     * @param Router $router
+     */
+    public function setRouter(Router $router)
+    {
+        $this->router = $router;
+    }
+
+
+    /**
+     * @param $json
+     *
+     * @return $this
+     */
     public function validateJson($json)
     {
         $request = json_decode($json);
 
+        //default requirements for jsonrpc 2.0
         $requirements = new Requirements();
-
         $requirements->add('jsonrpc', null, 'PARSE ERROR :: missing protocol', -32700);
-        $requirements->add('jsonrpc', "2.0", 'PARSE ERROR :: wrong version', -32700);
+        $requirements->add('jsonrpc', $this->getVersion(), 'PARSE ERROR :: wrong version', -32700);
         $requirements->add('method', null, 'INVALID REQUEST :: missing method', -32600);
         $requirements->add('params', null, 'INVALID REQUEST :: missing params', -32600);
 
+        // add the requirements
+        foreach($this->getRequirements() as $req){
+            $requirements->add($req['key'],$req['value'],$req['errorMessage'],$req['errorCode']);
+        }
+
+        // validate our requirements
         $requirements->validate($request);
         if ($requirements->isError()) {
             $this->setValidJson(false);
@@ -166,26 +309,28 @@ class Listener
             $this->setMethod($request->method);
             $this->setParams($request->params);
             $this->setId($request->id);
+            $this->setJsonObject($request);
         }
 
         return $this;
     }
 
+    /**
+     * @return mixed
+     * @throws RpcExceptions
+     * @throws \Exception
+     */
     public function processRequest()
     {
         if ($this->router->exist($this->getMethod())) {
             try {
-                $this->methodFactory = new MethodFactory($this->router->getMethod());
+                $this->setMethodFactory(new MethodFactory($this->router->getMethod()));
             } catch (RpcExceptions $e) {
-                echo 'test';exit;
                 $this->setErrorMessage($e->getMessage(), $e->getCode());
                 throw $e;
-
             }
         } else {
-            echo 'test';exit;
             $this->setErrorMessage('INVALID REQUEST :: missing method', -32600);
-
             throw new RpcExceptions("Method {$this->getMethod()} does not exist!");
         }
 
@@ -208,8 +353,8 @@ class Listener
             } else {
                 $results = $this->methodFactory->executeMethod($this->getParams());
             }
-        }catch (RpcExceptions $e){
-            $this->setErrorMessage($e->getMessage(),$e->getCode());
+        } catch (RpcExceptions $e) {
+            $this->setErrorMessage($e->getMessage(), $e->getCode());
             throw $e;
         }
 
@@ -223,6 +368,13 @@ class Listener
         return $results;
     }
 
+    /**
+     * @param array $method
+     * @param array $params
+     * @param null  $results
+     *
+     * @throws RpcExceptions
+     */
     private function otherRequest(array $method, array $params, $results = null)
     {
         $requestParams = ['params' => $params, 'results' => $results];
@@ -241,21 +393,27 @@ class Listener
 
             return true;
         } catch (\Exception $e) {
-            $this->setErrorMessage($e->getMessage(),$e->getCode());
+            $this->setErrorMessage($e->getMessage(), $e->getCode());
             throw new RpcExceptions($e->getMessage(), $e->getCode());
         }
     }
 
+    /**
+     * @return bool
+     */
     private function paramsAreAssoc()
     {
         return array_keys($this->getParams()) !== range(0, count($this->getParams()) - 1);
     }
 
 
+    /**
+     * @return string
+     */
     public function getResponse()
     {
         $response = [
-            "jsonrpc" => "2.0",
+            "jsonrpc" => $this->getVersion(),
         ];
 
         if ($this->isError()) {

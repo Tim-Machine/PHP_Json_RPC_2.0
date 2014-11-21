@@ -1,13 +1,4 @@
-<?php
-/**
- * Created by PhpStorm.
- * User: Timothy
- * Date: 11/18/2014
- * Time: 9:56 PM
- */
-
-namespace Timmachine\PhpJsonRpc;
-
+<?php namespace Timmachine\PhpJsonRpc;
 
 /**
  * Class Requirements
@@ -26,6 +17,9 @@ class Requirements
      */
     private $errorMessage = '';
 
+    /**
+     * @var int
+     */
     private $errorCode = 0;
 
     /**
@@ -123,6 +117,9 @@ class Requirements
     }
 
 
+    /**
+     * @param $request
+     */
     public function validate($request)
     {
         foreach ($this->getRequirements() as $requirement) {
