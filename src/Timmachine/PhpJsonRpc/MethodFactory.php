@@ -210,7 +210,17 @@ class MethodFactory
         $refl = new \ReflectionClass($class);
 
         if ($con = $refl->getConstructor()) {
-            $this->setConstructorArguments($con->getParameters());
+
+            $params = $con->getParameters();
+
+            foreach($params as $param){
+                if($param->isOptional())
+                {
+                    $param->default = $param->getDefaultValue();
+                }
+            }
+
+            $this->setConstructorArguments($params);
 
             return true;
         } else {

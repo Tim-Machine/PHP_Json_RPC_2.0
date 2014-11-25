@@ -61,21 +61,25 @@ class Listener
     /**
      * @var
      */
-    private $version ;
+    private $version;
 
     /**
      * @var
      */
     private $requirements;
 
+    private $methodArgs;
+
     /**
      * @param Router $router
      * @param string $version
-     * @param array  $requirements
+     * @param array $requirements
      */
     function __construct(Router $router, $version = '2.0', array $requirements = array())
     {
         $this->setRouter($router);
+        $this->setVersion($version);
+        $this->setRequirements($requirements);
     }
 
     /**
@@ -93,7 +97,6 @@ class Listener
     {
         $this->jsonObject = $jsonObject;
     }
-
 
 
     /**
@@ -174,6 +177,10 @@ class Listener
      */
     public function setParams($params)
     {
+        if (!is_array($params)) {
+            $params = [$params];
+        }
+
         $this->params = $params;
     }
 
@@ -284,7 +291,22 @@ class Listener
      */
     public function validateJson($json)
     {
-        $request = json_decode($json);
+
+
+        try{
+            $request = json_decode($json);
+        }catch (\Exception $e){
+            $this->setErrorMessage($e->getMessage(),$e->getCode());
+            $this->setValidJson(false);
+        }
+
+        // this should only happen if there is a json parse error due to malformed data
+        if(is_null($request)){
+            $this->setValidJson(false);
+            $this->setErrorMessage('Json formatting is incorrect',-32700);
+            $this->setError(true);
+        }
+
 
         //default requirements for jsonrpc 2.0
         $requirements = new Requirements();
@@ -294,12 +316,19 @@ class Listener
         $requirements->add('params', null, 'INVALID REQUEST :: missing params', -32600);
 
         // add the requirements
-        foreach($this->getRequirements() as $req){
-            $requirements->add($req['key'],$req['value'],$req['errorMessage'],$req['errorCode']);
-        }
+
+
+            foreach ($this->getRequirements() as $req) {
+                $requirements->add($req['key'], $req['value'], $req['errorMessage'], $req['errorCode']);
+            }
+
+
 
         // validate our requirements
-        $requirements->validate($request);
+        if(!$this->isError()){
+            $requirements->validate($request);
+        }
+        // if requirement errors lets  flag them
         if ($requirements->isError()) {
             $this->setValidJson(false);
             $this->setErrorMessage($requirements->getErrorMessage(), $requirements->getErrorCode());
@@ -322,6 +351,10 @@ class Listener
      */
     public function processRequest()
     {
+        if($this->isError()){
+            return null;
+        }
+
         if ($this->router->exist($this->getMethod())) {
             try {
                 $this->setMethodFactory(new MethodFactory($this->router->getMethod()));
@@ -334,22 +367,36 @@ class Listener
             throw new RpcExceptions("Method {$this->getMethod()} does not exist!");
         }
 
+        if($this->isError()){
+            return null;
+        }
+
+
         try {
-            $this->methodFactory->getMethodArgs();
+            $this->methodArgs = $this->methodFactory->getMethodArgs();
         } catch (RpcExceptions $e) {
             $this->setErrorMessage($e->getMessage(), $e->getCode());
             throw $e;
+        }
+
+        if($this->isError()){
+            return null;
         }
 
         if ($methods = $this->router->before) {
             $this->otherRequest($methods, $this->getParams());
         }
 
+        if($this->isError()){
+            return null;
+        }
+
         // if this is not an associated array we can pass it directly to the method
         // if its not lets make sure that the params are in the correct order
         try {
-            if ($this->paramsAreAssoc()) {
-
+            if (is_object($this->getParams()[0])) {
+                $params = $this->orderParams();
+                $results = $this->methodFactory->executeMethod($params);
             } else {
                 $results = $this->methodFactory->executeMethod($this->getParams());
             }
@@ -358,9 +405,16 @@ class Listener
             throw $e;
         }
 
+        if($this->isError()){
+            return null;
+        }
 
         if ($methods = $this->router->after) {
             $this->otherRequest($methods, $this->getParams(), $results);
+        }
+
+        if($this->isError()){
+            return null;
         }
 
         $this->setResult($results);
@@ -371,7 +425,7 @@ class Listener
     /**
      * @param array $method
      * @param array $params
-     * @param null  $results
+     * @param null $results
      *
      * @throws RpcExceptions
      */
@@ -398,12 +452,24 @@ class Listener
         }
     }
 
-    /**
-     * @return bool
-     */
-    private function paramsAreAssoc()
+
+    private function orderParams()
     {
-        return array_keys($this->getParams()) !== range(0, count($this->getParams()) - 1);
+        $returnData = [];
+        $params = $this->getParams()[0];
+
+        foreach ($this->methodArgs as $arg) {
+            if (isset($params->{$arg->name})) {
+                $returnData[$arg->name] = $params->{$arg->name};
+            } elseif ($arg->isOptional()) {
+                $returnData[$arg->name] = $arg->getDefaultValue();
+            } else {
+                throw new RpcExceptions("missing parameter :: {$arg->name}", -32602);
+            }
+
+        }
+
+        return $returnData;
     }
 
 
