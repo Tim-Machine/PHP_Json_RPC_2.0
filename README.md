@@ -1,7 +1,7 @@
 
 #DO NOT USE IS NOT PRODUCTION READY
 
-#Router
+##Router
 the router allows you to map a string to a method inside of the class. The @ symbol is used to separate the class from the method name. It really doesn't do much on its own, but is a requirement for the Listener
 ```php
 $router = new \Timmachine\PhpJsonRpc\Router();
@@ -11,7 +11,7 @@ $router->add("math.add", 'BaseController@add');
 ```
 
 
-#Listener
+## Listener
 The listener is the brains of the operation. This bad boy will take your Json request twist it around and execute the method you want to call and then return the data to you in a properly formatted JsonRPC 2.0 format
 ```php
 
@@ -37,13 +37,13 @@ The listener is the brains of the operation. This bad boy will take your Json re
 
 ```
 
-#New JsonRPC versions?
+## New JsonRPC versions?
 lets make sure that we are forward thinking a little
 ```php
     $listener = new \Timmachine\PhpJsonRpc\Listener($routes,'2.1');
 ```
 
-##Custom Requirements ?
+## Custom Requirements ?
 Maybe your application has some custom requirements ?
 ```php
 
@@ -66,5 +66,23 @@ $mySpec = '3.0'
 
 $listener = new \Timmachine\PhpJsonRpc\Listener($routes,$mySpec, $customRequirements);
 
+
+```
+
+## Optional Params
+```php
+
+class foo{
+    public function bar($a = 2,$b = 3, $c = 4)
+    {
+     return $a + $b + $c;
+    }
+}
+
+// example json to make the request
+// '{"jsonrpc": "2.0", "method": "foo.bar", "params":[], "id": 1}';
+
+//example response
+//{"jsonrpc": "2.0", "result": 9, "id": 1}
 
 ```
