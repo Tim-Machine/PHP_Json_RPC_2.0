@@ -394,7 +394,7 @@ class Listener
         // if this is not an associated array we can pass it directly to the method
         // if its not lets make sure that the params are in the correct order
         try {
-            if (is_object($this->getParams()[0])) {
+            if (isset($this->getParams()[0]) && is_object($this->getParams()[0])) {
                 $params = $this->orderParams();
                 $results = $this->methodFactory->executeMethod($params);
             } else {
@@ -456,7 +456,12 @@ class Listener
     private function orderParams()
     {
         $returnData = [];
-        $params = $this->getParams()[0];
+
+        if(isset($this->getParams()[0]) && is_object($this->getParams()[0])){
+            $params = $this->getParams()[0];
+        }else{
+            $params = $this->getParams();
+        }
 
         foreach ($this->methodArgs as $arg) {
             if (isset($params->{$arg->name})) {
