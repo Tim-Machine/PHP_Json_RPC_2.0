@@ -105,11 +105,11 @@ class Requirements
     public function add($key, $value, $errorMessage, $errorCode)
     {
 
-        $requirement               = new \stdClass();
-        $requirement->key          = $key;
-        $requirement->value        = $value;
+        $requirement = new \stdClass();
+        $requirement->key = $key;
+        $requirement->value = $value;
         $requirement->errorMessage = $errorMessage;
-        $requirement->errorCode    = $errorCode;
+        $requirement->errorCode = $errorCode;
 
         $this->setRequirements($requirement);
 
@@ -131,9 +131,13 @@ class Requirements
                 $this->setErrorMessage($requirement->errorMessage, $requirement->errorCode);
             }
 
-            if (!is_null($requirement->value) && ($requirement->value !== $request->{$requirement->value})) {
+            if (!is_null($requirement->value) && ($request->{$requirement->key} != $requirement->value)) {
+
                 $this->setErrorMessage($requirement->errorMessage, $requirement->errorCode);
+
             }
+
+
         }
     }
 

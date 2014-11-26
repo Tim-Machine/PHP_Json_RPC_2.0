@@ -22,19 +22,14 @@ class RequirementsTest extends \PHPUnit_Framework_TestCase
 
     public function testCanAddRequirements()
     {
-        self::$requirements->add('key', 'value', 'errorMessage', 'errorCode');
+        self::$requirements->add('key', 'test', 'errorMessage', 'errorCode');
         $this->assertCount(1, self::$requirements->getRequirements());
     }
 
     public function testValidate()
     {
-
         $requirement =  new \stdClass();
-        $requirement->key = 'key';
-        $requirement->value = 'value';
-        $requirement->errorMessage = 'errorMessage';
-        $requirement->errorCode = 'errorCode';
-
+        $requirement->key = 'test';
         self::$requirements->validate($requirement);
         $this->assertFalse(self::$requirements->isError());
     }

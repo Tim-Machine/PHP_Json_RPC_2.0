@@ -5,6 +5,10 @@ namespace Timmachine\PhpJsonRpc;
 use Timmachine\PhpJsonRpc\Requirements;
 use Timmachine\PhpJsonRpc\Router;
 
+/**
+ * Class Listener
+ * @package Timmachine\PhpJsonRpc
+ */
 class Listener
 {
 
@@ -68,6 +72,9 @@ class Listener
      */
     private $requirements;
 
+    /**
+     * @var
+     */
     private $methodArgs;
 
     /**
@@ -311,7 +318,7 @@ class Listener
         //default requirements for jsonrpc 2.0
         $requirements = new Requirements();
         $requirements->add('jsonrpc', null, 'PARSE ERROR :: missing protocol', -32700);
-        $requirements->add('jsonrpc', $this->getVersion(), 'PARSE ERROR :: wrong version', -32700);
+        $requirements->add('jsonrpc',strval($this->getVersion()), 'PARSE ERROR :: wrong version', -32700);
         $requirements->add('method', null, 'INVALID REQUEST :: missing method', -32600);
         $requirements->add('params', null, 'INVALID REQUEST :: missing params', -32600);
 
@@ -394,12 +401,7 @@ class Listener
         // if this is not an associated array we can pass it directly to the method
         // if its not lets make sure that the params are in the correct order
         try {
-            if (isset($this->getParams()[0]) && is_object($this->getParams()[0])) {
-                $params = $this->orderParams();
-                $results = $this->methodFactory->executeMethod($params);
-            } else {
-                $results = $this->methodFactory->executeMethod($this->getParams());
-            }
+            $results = $this->execute();
         } catch (RpcExceptions $e) {
             $this->setErrorMessage($e->getMessage(), $e->getCode());
             throw $e;
@@ -453,6 +455,10 @@ class Listener
     }
 
 
+    /**
+     * @return array
+     * @throws RpcExceptions
+     */
     private function orderParams()
     {
         $returnData = [];
@@ -475,6 +481,29 @@ class Listener
         }
 
         return $returnData;
+    }
+
+
+    /**
+     * @return mixed
+     * @throws RpcExceptions
+     */
+    private function execute()
+    {
+        if (isset($this->getParams()[0]) && is_object($this->getParams()[0])) {
+            $params = $this->orderParams();
+            $results = $this->methodFactory->executeMethod($params);
+        }
+        // if the request doesn't have enough params we need to abort
+        elseif(count($this->methodArgs) !== count($this->getParams()))
+        {
+            $this->setErrorMessage('Missing required parameters',-32600);
+            throw new RpcExceptions('Missing required parameters',-32600);
+        }
+        else {
+            $results = $this->methodFactory->executeMethod($this->getParams());
+        }
+        return $results;
     }
 
 

@@ -1,5 +1,6 @@
+[![Build Status](https://travis-ci.org/Tim-Machine/PHP_Json_RPC_2.0.svg?branch=dev)](https://travis-ci.org/Tim-Machine/PHP_Json_RPC_2.0)
 
-#DO NOT USE IS NOT PRODUCTION READY
+
 
 ##Router
 the router allows you to map a string to a method inside of the class. The @ symbol is used to separate the class from the method name. It really doesn't do much on its own, but is a requirement for the Listener
