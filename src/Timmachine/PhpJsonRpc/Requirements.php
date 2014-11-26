@@ -131,7 +131,7 @@ class Requirements
                 $this->setErrorMessage($requirement->errorMessage, $requirement->errorCode);
             }
 
-            if (!is_null($requirement->value) && $requirement->value !== $request->{$requirement->key}) {
+            if (!is_null($requirement->value) && ($requirement->value !== $request->{$requirement->value})) {
                 $this->setErrorMessage($requirement->errorMessage, $requirement->errorCode);
             }
         }
